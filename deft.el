@@ -880,6 +880,10 @@ Available methods are 'mtime and 'title.")
 (defvar deft-pending-updates nil
   "Indicator of pending updates due to automatic saves, etc.")
 
+(defvar deft-cache-file-hook nil
+  "Hook run before a file is saved to the cache.
+Run in a temp buffer with the file’s content with no argument.")
+
 (make-obsolete-variable 'deft-width-offset nil "v0.8")
 
 ;; Keymap definition
@@ -1117,16 +1121,17 @@ title."
   (puthash file mtime deft-hash-mtimes)
   (let (contents title)
     ;; Contents
-    (with-current-buffer (get-buffer-create "*Deft temp*")
+    (with-temp-buffer
       (insert-file-contents file nil nil nil t)
-      (setq contents (concat (buffer-string))))
+      (run-hook-with-args 'deft-cache-file-hook)
+      (setq contents (buffer-substring-no-properties
+                      (point-min) (point-max))))
     (puthash file contents deft-hash-contents)
     ;; Title
     (setq title (deft-parse-title file contents))
     (puthash file title deft-hash-titles)
     ;; Summary
-    (puthash file (deft-parse-summary contents title) deft-hash-summaries))
-  (kill-buffer "*Deft temp*"))
+    (puthash file (deft-parse-summary contents title) deft-hash-summaries)))
 
 (defun deft-file-newer-p (file1 file2)
   "Return non-nil if FILE1 was modified since FILE2 and nil otherwise."
