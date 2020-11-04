@@ -1290,9 +1290,19 @@ handles nil values gracefully."
         (widget-insert (propertize (truncate-string-to-width summary summary-width)
                                    'face 'deft-summary-face)))
       (when mtime
-        (while (< (current-column) line-width)
-          (widget-insert " "))
-        (widget-insert (propertize mtime 'face 'deft-time-face)))
+        (let ((time-string (propertize mtime 'face 'deft-time-face)))
+          ;; Insert padding
+          (if (window-system)
+              (widget-insert
+               ;; This properly aligns CJK characters.
+               (propertize
+                " " 'display `(space :align-to
+                                     (- (+ right right-margin)
+                                        ,(length time-string)))))
+            (while (< (current-column) line-width)
+              (widget-insert " ")))
+          ;; Insert time.
+          (widget-insert time-string)))
       (widget-insert "\n"))))
 
 (defun deft-buffer-visible-p ()
